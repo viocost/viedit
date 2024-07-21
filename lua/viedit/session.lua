@@ -26,7 +26,6 @@ function Session.get(buffer_id)
 end
 
 function Session:set_current_extmark(extmark_id)
-	print("Setting current extmark to", extmark_id)
 	self.current_extmark = extmark_id
 end
 

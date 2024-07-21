@@ -14,16 +14,11 @@ function M.start_session(buffer_id)
 	local group_id = vim.api.nvim_create_augroup("Viedit", { clear = false })
 	local session = Session.new(buffer_id, group_id)
 
-	print("Starting session")
-
 	vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "TextChangedP" }, {
 		group = group_id,
 		buffer = buffer_id,
 		callback = function()
-			print("Text changed")
-
 			if vim.fn.undotree(buffer_id).seq_cur ~= vim.fn.undotree(buffer_id).seq_last then
-				print("undo operation. Returning")
 				return
 			end
 
@@ -36,7 +31,6 @@ function M.start_session(buffer_id)
 		group = group_id,
 		buffer = buffer_id,
 		callback = function()
-			print("Cursor moved")
 			cb.on_cursor_move(buffer_id, session)
 		end,
 	})
@@ -49,7 +43,6 @@ local function close_session(buffer_id)
 
 	vim.api.nvim_del_augroup_by_id(session.augroup_id)
 	Session.delete(buffer_id)
-	print("Session closed for ", buffer_id)
 end
 
 function M.select_all(buffer_number, text, session, lock_to_keyword)
@@ -157,7 +150,6 @@ function M.navigate_extmarks(back)
 	local buffer_id = vim.api.nvim_get_current_buf()
 	local session = Session.get(buffer_id)
 	local extmarks = session.marks:get_all()
-	print(vim.inspect(extmarks))
 
 	-- Cycle to the next/previous extmark ID
 	local next_id = cycle_extmarks(session, back)
@@ -217,7 +209,6 @@ local function remove_extmark(mark_id, buffer_id, session)
 end
 
 local function find_word_at_cursor(buffer_id, selected_text)
-	-- Get the line where the cursor is
 	local cursor_pos = vim.api.nvim_win_get_cursor(0)
 	local cursor_row, cursor_col = cursor_pos[1] - 1, cursor_pos[2]
 	local line = vim.api.nvim_buf_get_lines(buffer_id, cursor_row, cursor_row + 1, false)[1]
@@ -227,22 +218,18 @@ local function find_word_at_cursor(buffer_id, selected_text)
 		local match_start, match_end = line:find(selected_text, search_start, true)
 
 		if not match_start then
-			-- No more occurrences found
 			return nil
 		end
 
 		if cursor_col >= match_start - 1 and cursor_col < match_end then
-			-- Found a match that includes the cursor position
 			return {
 				start = { cursor_row, match_start - 1 },
 				["end"] = { cursor_row, match_end },
 			}
 		end
 
-		-- Move the search start to continue looking
 		search_start = match_start + 1
 
-		-- If we've moved past the cursor, stop searching
 		if search_start > cursor_col then
 			return nil
 		end
@@ -256,8 +243,6 @@ local function toggle_single(buffer_id)
 	else
 		local range = find_word_at_cursor(buffer_id, session.current_selection)
 		if range then
-			print("Got range", vim.inspect(range), "text", session.current_selection)
-
 			local mark = vim.api.nvim_buf_set_extmark(buffer_id, namespace.ns, range.start[1], range.start[2], {
 				end_col = range["end"][2],
 				hl_group = constants.HL_GROUP_SELECT,
@@ -267,7 +252,7 @@ local function toggle_single(buffer_id)
 			session.marks:add(mark)
 			util.highlight_current_extrmark(buffer_id, session)
 		else
-			print("Nothing found", "text", session.current_selection)
+			print("Selected text not found under the cursor")
 		end
 	end
 end
@@ -284,7 +269,6 @@ function M.restrict_to_function()
 	local marks = session.marks:get_all()
 
 	local marks_within_range = Marks.from_ids(util.filter_marks_within_range(marks, range))
-	print("marks within range", vim.inspect(marks_within_range))
 
 	for _, mark_id in ipairs(marks) do
 		if not marks_within_range:contains(mark_id) then
@@ -295,8 +279,6 @@ function M.restrict_to_function()
 	if session.marks:size() == 0 then
 		close_session(buffer_id)
 	end
-
-	print("Range", vim.inspect(marks_within_range))
 end
 
 M.close_session = close_session
