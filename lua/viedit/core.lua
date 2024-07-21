@@ -148,8 +148,12 @@ end
 
 function M.navigate_extmarks(back)
 	local buffer_id = vim.api.nvim_get_current_buf()
+	if not Session.is_active(buffer_id) then
+		print("Viedit session is not active")
+		return
+	end
+
 	local session = Session.get(buffer_id)
-	local extmarks = session.marks:get_all()
 
 	-- Cycle to the next/previous extmark ID
 	local next_id = cycle_extmarks(session, back)

@@ -67,11 +67,6 @@ end
 -- Jumps to the next or previous selected occurrence.
 -- Pass {back=true} to traverse backward.
 function M.step(opts)
-	local buffer_id = vim.api.nvim_get_current_buf()
-	if not Session.is_session_active(buffer_id) then
-		print("Viedit session is not active")
-		return
-	end
 	opts = opts or {}
 	core.navigate_extmarks(opts.back)
 end
