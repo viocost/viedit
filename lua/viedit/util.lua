@@ -36,8 +36,6 @@ local function update_extmarks(buffer_id, session, new_content)
 
 			local config = require("viedit.config").config
 
-			print(vim.inspect(config))
-
 			vim.api.nvim_buf_set_extmark(buffer_id, ns, start_row, start_col, {
 				id = mark_id,
 				end_row = new_end_row,
