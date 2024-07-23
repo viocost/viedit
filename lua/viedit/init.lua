@@ -1,23 +1,13 @@
-M = {}
 require("viedit.namespace")
 
+local M = {}
 local core = require("viedit.core")
 
 local config = require("viedit.config")
-local util = require("viedit/util")
-local constants = require("viedit/constants")
-local keymaps = require("viedit/keymaps")
-local Session = require("viedit/session")
+local util = require("viedit.util")
+local keymaps = require("viedit.keymaps")
 
-local function bootstrap()
-	local cfg = config.config
-	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT, cfg.highlight)
-	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT_CURRENT, cfg.current_highlight)
-end
-
-function M.setup(opts)
-	config.config = vim.tbl_deep_extend("force", config.config, opts or {})
-end
+M.setup = config.setup
 
 -- Toggles selection of all occurrences of the word under the cursor in the buffer.
 -- In _normal_ mode, it selects only independent keyword occurrences.
@@ -26,7 +16,7 @@ end
 -- If any occurrences are already selected, the function will deselect everything and end the session.
 function M.toggle_all()
 	local buffer_id = vim.api.nvim_get_current_buf()
-	local select = require("viedit/select")
+	local select = require("viedit.select")
 
 	if core.is_session_active(buffer_id) then
 		core.deselect_all(buffer_id)
@@ -86,10 +76,5 @@ function M.reload()
 end
 
 M.restrict_to_function = core.restrict_to_function
-
-vim.api.nvim_create_autocmd("VimEnter", {
-	callback = bootstrap,
-	once = true,
-})
 
 return M

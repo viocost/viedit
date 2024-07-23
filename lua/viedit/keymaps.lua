@@ -1,8 +1,11 @@
-M = {}
-local keys = require("viedit/config").config.keys
+local M = {}
+
+local config = require("viedit.config")
 
 function M.set_viedit_keymaps(buffer_id)
 	-- Store original mappings for specific keys
+	local keys = config.config.keys
+
 	M.original_keymaps = {}
 	local keys_to_override = { keys.next_occurrence, keys.previous_occurrence, "t" }
 	for _, key in ipairs(keys_to_override) do
@@ -38,6 +41,8 @@ end
 
 function M.restore_original_keymaps(buffer_id)
 	-- Clear iedit-specific mappings
+
+	local keys = config.config.keys
 	vim.api.nvim_buf_del_keymap(buffer_id, "n", keys.next_occurrence)
 	vim.api.nvim_buf_del_keymap(buffer_id, "n", keys.previous_occurrence)
 

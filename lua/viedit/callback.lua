@@ -1,5 +1,5 @@
-M = {}
-local util = require("viedit/util")
+local M = {}
+local util = require("viedit.util")
 
 function M.on_text_changed(buffer_id, ev) end
 

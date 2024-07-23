@@ -1,14 +1,14 @@
 M = {}
 local Session = require("viedit.session")
 
-local config = require("viedit/config")
-local constants = require("viedit/constants")
-local ranges = require("viedit/ranges")
+local config = require("viedit.config")
+local constants = require("viedit.constants")
+local ranges = require("viedit.ranges")
 local namespace = require("viedit.namespace")
-local cb = require("viedit/callback")
+local cb = require("viedit.callback")
 
-local Marks = require("viedit/marks")
-local util = require("viedit/util")
+local Marks = require("viedit.marks")
+local util = require("viedit.util")
 
 function M.start_session(buffer_id)
 	local group_id = vim.api.nvim_create_augroup("Viedit", { clear = false })
@@ -63,7 +63,7 @@ function M.select_all(buffer_number, text, session, lock_to_keyword)
 
 			local is_valid = true
 			if lock_to_keyword then
-				local range = require("viedit/select").get_keyword_range(line, line_num, start_pos)
+				local range = require("viedit.select").get_keyword_range(line, line_num, start_pos)
 
 				local keyword = line:sub(range[2] + 1, range[4])
 				if keyword ~= text then

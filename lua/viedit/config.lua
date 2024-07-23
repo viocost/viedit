@@ -1,14 +1,19 @@
-M = {}
+local M = {}
+local constants = require("viedit.constants")
 
-M.config = {
+---@class VieditOptions
+M.defaults = {
 	-- Highlight group for marked text
 	-- Can use any highlight group definitions
-	highlight = { link = "IncSearch" },
+	highlight = {
+
+		fg = "#000000",
+		bg = "#fff98c",
+	},
 
 	-- Highlight group for the marked text where cursor currently is
 	current_highlight = {
-		fg = "#000000",
-		bg = "#dd63ff",
+		link = "CurSearch",
 	},
 
 	-- Determines the behavior of the end of the mark when text is inserted
@@ -37,5 +42,15 @@ M.config = {
 		previous_occurrence = "N",
 	},
 }
+
+---@type VieditOptions
+M.config = vim.deepcopy(M.defaults)
+
+M.setup = function(opts)
+	M.config = vim.tbl_deep_extend("force", M.defaults, opts or {})
+
+	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT, M.config.highlight)
+	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT_CURRENT, M.config.current_highlight)
+end
 
 return M

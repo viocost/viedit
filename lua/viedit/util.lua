@@ -1,7 +1,6 @@
 M = {}
-local ns = require("viedit/namespace").ns
-local constants = require("viedit/constants")
-local config = require("viedit/config").config
+local ns = require("viedit.namespace").ns
+local constants = require("viedit.constants")
 
 local function mark_id_to_range(buf, mark_id)
 	if mark_id == nil then
@@ -34,6 +33,11 @@ local function update_extmarks(buffer_id, session, new_content)
 			-- Update extmark end position
 			local new_end_row = start_row + #new_lines - 1
 			local new_end_col = start_col + (#new_lines > 1 and #new_lines[#new_lines] or #new_content)
+
+			local config = require("viedit.config").config
+
+			print(vim.inspect(config))
+
 			vim.api.nvim_buf_set_extmark(buffer_id, ns, start_row, start_col, {
 				id = mark_id,
 				end_row = new_end_row,
@@ -77,6 +81,7 @@ local function is_cursor_on_extmark(buffer_id, extmark_id)
 end
 
 local function change_extmark_highlight(buffer, namespace, extmark_id, new_hl_group)
+	local config = require("viedit.config").config
 	local range = mark_id_to_range(buffer, extmark_id)
 	if range == nil then
 		print("Extmark %d not found", extmark_id)
