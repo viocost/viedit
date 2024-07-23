@@ -5,7 +5,6 @@ local config = require("viedit.config")
 local constants = require("viedit.constants")
 local ranges = require("viedit.ranges")
 local namespace = require("viedit.namespace")
-local cb = require("viedit.callback")
 
 local Marks = require("viedit.marks")
 local util = require("viedit.util")
@@ -31,7 +30,7 @@ function M.start_session(buffer_id)
 		group = group_id,
 		buffer = buffer_id,
 		callback = function()
-			cb.on_cursor_move(buffer_id, session)
+			util.highlight_current_extrmark(buffer_id, session)
 		end,
 	})
 	return session
