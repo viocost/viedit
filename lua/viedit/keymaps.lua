@@ -7,7 +7,7 @@ function M.set_viedit_keymaps(buffer_id)
 	local keys = config.config.keys
 
 	M.original_keymaps = {}
-	local keys_to_override = { keys.next_occurrence, keys.previous_occurrence, "t" }
+	local keys_to_override = { keys.next_occurrence, keys.previous_occurrence, keys.toggle_single }
 	for _, key in ipairs(keys_to_override) do
 		local existing_keymap = vim.api.nvim_buf_get_keymap(buffer_id, "n")[key]
 		if existing_keymap and #existing_keymap > 0 then
@@ -33,7 +33,7 @@ function M.set_viedit_keymaps(buffer_id)
 	vim.api.nvim_buf_set_keymap(
 		buffer_id,
 		"n",
-		"t",
+		keys.toggle_single,
 		[[<cmd>lua require'viedit'.toggle_single()<CR>]],
 		{ noremap = true, silent = true }
 	)

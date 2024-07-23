@@ -40,6 +40,8 @@ M.defaults = {
 		next_occurrence = "n",
 		-- Key to move to the previous occurrence of the marked text
 		previous_occurrence = "N",
+		-- Toggle individual occurrence to/from selection
+		toggle_single = "t",
 	},
 }
 
