@@ -15,6 +15,8 @@ https://github.com/user-attachments/assets/6dd95c99-f048-4b31-a4b6-a239993fed0a
 
 ## Installation
 
+### Install the plugin
+
 Use your preferred Neovim plugin manager to install Viedit. Here are examples for popular plugin managers:
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
@@ -31,7 +33,6 @@ Plug 'viocost/viedit'
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
-
 ```lua
 {
   'viocost/viedit',
@@ -39,6 +40,28 @@ Plug 'viocost/viedit'
     require('viedit').setup()
   end
 }
+```
+
+### Setup key bindings
+
+For example in lazyvim:
+
+```lua
+map({ "n" }, ";", '<cmd>lua require("viedit").toggle_all()<CR>', {
+  desc = "viedit mode",
+})
+
+map({ "v" }, ";", '<cmd>lua require("viedit").toggle_all()<CR>', {
+  desc = "viedit mode",
+})
+
+map({ "n" }, "<leader>rr", '<cmd>lua require("viedit").reload()<CR>', {
+  desc = "vedit mode reload",
+})
+
+map({ "n" }, "<leader>rf", '<cmd>lua require("viedit").restrict_to_function()<CR>', {
+  desc = "restrict to function",
+})
 ```
 
 ## Configuration
