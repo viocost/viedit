@@ -2,6 +2,8 @@
 
 Viedit is a Neovim plugin inspired by Emacs' iedit mode, allowing for quick naviagtion and simultaneous editing of multiple occurrences of text in a buffer.
 
+https://github.com/user-attachments/assets/6dd95c99-f048-4b31-a4b6-a239993fed0a
+
 ## Features
 
 - Highlight current and all matched occurrences
@@ -28,6 +30,7 @@ Plug 'viocost/viedit'
 ```
 
 ### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+
 
 ```lua
 {
