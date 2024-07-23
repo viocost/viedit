@@ -2,13 +2,13 @@ local M = {}
 local constants = require("viedit.constants")
 
 ---@class VieditOptions
-M.defaults = {
+defaults = {
 	-- Highlight group for marked text
 	-- Can use any highlight group definitions
 	highlight = {
 
 		fg = "#000000",
-		bg = "#fff98c",
+		bg = "#ffebb5",
 	},
 
 	-- Highlight group for the marked text where cursor currently is
@@ -46,13 +46,15 @@ M.defaults = {
 }
 
 ---@type VieditOptions
-M.config = vim.deepcopy(M.defaults)
+M.config = vim.deepcopy(defaults)
 
 M.setup = function(opts)
-	M.config = vim.tbl_deep_extend("force", M.defaults, opts or {})
+	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
 	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT, M.config.highlight)
 	vim.api.nvim_set_hl(0, constants.HL_GROUP_SELECT_CURRENT, M.config.current_highlight)
 end
+
+M.setup()
 
 return M
