@@ -34,7 +34,6 @@ function M.toggle_all()
 			util.highlight_current_extrmark(buffer_id, session)
 			session.current_selection = text
 		end
-
 		vim.cmd.norm({ "\x1b", bang = true })
 	end
 end
@@ -45,11 +44,6 @@ end
 -- If the text under the cursor does not match the selected text, the function will do nothing.
 function M.toggle_single()
 	local buffer_id = vim.api.nvim_get_current_buf()
-
-	if not core.is_session_active(buffer_id) then
-		print("Not yet implemented")
-		return
-	end
 
 	core.toggle_single(buffer_id)
 end

@@ -8,6 +8,8 @@ local namespace = require("viedit.namespace")
 
 local Marks = require("viedit.marks")
 local util = require("viedit.util")
+local select = require("viedit.select")
+local keymaps = require("viedit.keymaps")
 
 function M.start_session(buffer_id)
 	local group_id = vim.api.nvim_create_augroup("Viedit", { clear = false })
@@ -239,24 +241,42 @@ local function find_word_at_cursor(buffer_id, selected_text)
 	end
 end
 
+local function mark_single_selection(buffer_id, session)
+	local range = find_word_at_cursor(buffer_id, session.current_selection)
+	if range then
+		local mark = vim.api.nvim_buf_set_extmark(buffer_id, namespace.ns, range.start[1], range.start[2], {
+			end_col = range["end"][2],
+			hl_group = constants.HL_GROUP_SELECT,
+			end_right_gravity = config.end_right_gravity,
+			right_gravity = config.righ_gravity,
+		})
+		session.marks:add(mark)
+		util.highlight_current_extrmark(buffer_id, session)
+	else
+		print("Selected text not found under the cursor")
+	end
+end
+
 local function toggle_single(buffer_id)
 	local session = Session.get(buffer_id)
-	if session.current_extmark then
-		remove_extmark(session.current_extmark, buffer_id, session)
-	else
-		local range = find_word_at_cursor(buffer_id, session.current_selection)
-		if range then
-			local mark = vim.api.nvim_buf_set_extmark(buffer_id, namespace.ns, range.start[1], range.start[2], {
-				end_col = range["end"][2],
-				hl_group = constants.HL_GROUP_SELECT,
-				end_right_gravity = config.end_right_gravity,
-				right_gravity = config.righ_gravity,
-			})
-			session.marks:add(mark)
-			util.highlight_current_extrmark(buffer_id, session)
+	if session then
+		if session.current_extmark then
+			remove_extmark(session.current_extmark, buffer_id, session)
 		else
-			print("Selected text not found under the cursor")
+			mark_single_selection(buffer_id, session)
 		end
+	else
+		local text = select.get_text_under_cursor(buffer_id)
+
+		if text then
+			session = M.start_session(buffer_id)
+
+			session.current_selection = text
+
+			keymaps.set_viedit_keymaps(buffer_id)
+			mark_single_selection(buffer_id, session)
+		end
+		vim.cmd.norm({ "\x1b", bang = true })
 	end
 end
 

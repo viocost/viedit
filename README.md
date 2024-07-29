@@ -139,6 +139,7 @@ This function toggles the selection of a single occurrence:
 
 - If the cursor is inside a selected occurrence, it will deselect it.
 - If the cursor is on non-selected text that matches the selected text, it will select it.
+- If no text selected, the function will start a new viedit session with the keyword or a visual selection under the cursor
 - If the text under the cursor does not match the selected text, it will do nothing.
 
 ### Navigate Through Occurrences
