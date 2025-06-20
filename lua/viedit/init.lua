@@ -9,6 +9,14 @@ local keymaps = require('viedit.keymaps')
 
 M.setup = config.setup
 
+local function disable_session(buffer_id)
+  if core.is_session_active(buffer_id) then
+    core.deselect_all(buffer_id)
+    core.close_session(buffer_id)
+    keymaps.restore_original_keymaps(buffer_id)
+  end
+end
+
 -- Toggles selection of all occurrences of the word under the cursor in the buffer.
 -- In _normal_ mode, it selects only independent keyword occurrences.
 -- This means substrings within larger words are not selected.
@@ -19,9 +27,7 @@ function M.toggle_all()
   local select = require('viedit.select')
 
   if core.is_session_active(buffer_id) then
-    core.deselect_all(buffer_id)
-    core.close_session(buffer_id)
-    keymaps.restore_original_keymaps(buffer_id)
+    disable_session(buffer_id)
   else
     local text = select.get_text_under_cursor(buffer_id)
 
@@ -71,5 +77,7 @@ end
 
 M.restrict_to_function = core.restrict_to_function
 M.restrict_to_visual_selection = core.restrict_to_visual_selection
-
+M.disable = function()
+  disable_session(vim.api.nvim_get_current_buf())
+end
 return M
