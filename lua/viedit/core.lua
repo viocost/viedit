@@ -47,44 +47,84 @@ local function close_session(buffer_id)
 end
 
 function M.select_all(buffer_number, text, session, lock_to_keyword)
-  if not session then
-    print('No active session for buffer', buffer_number)
-    return {}
-  end
+	if not session then
+		print('No active session for buffer', buffer_number)
+		return {}
+	end
 
-  local lines = vim.api.nvim_buf_get_lines(buffer_number, 0, -1, false)
-
-  for line_num, line in ipairs(lines) do
-    local start_idx = 1
-    while true do
-      local start_pos, end_pos = line:find(text, start_idx, true)
-      if not start_pos then
-        break
-      end
-
-      local is_valid = true
-      if lock_to_keyword then
-        local range = require('viedit.select').get_keyword_range(line, line_num, start_pos)
-
-        local keyword = line:sub(range[2] + 1, range[4])
-        if keyword ~= text then
-          is_valid = false
-        end
-      end
-
-      if is_valid then
-        local mark = vim.api.nvim_buf_set_extmark(buffer_number, namespace.ns, line_num - 1, start_pos - 1, {
-          end_col = end_pos,
-          hl_group = constants.HL_GROUP_SELECT,
-          end_right_gravity = config.end_right_gravity,
-          right_gravity = config.righ_gravity,
-        })
-        session.marks:add(mark)
-      end
-
-      start_idx = end_pos + 1
-    end
-  end
+	-- Get all lines and treat buffer as single string
+	local lines = vim.api.nvim_buf_get_lines(buffer_number, 0, -1, false)
+	local buffer_text = table.concat(lines, "\n")
+	local search_pattern = vim.pesc(text)
+	
+	-- Search through the entire buffer
+	local search_pos = 1
+	while true do
+		local start_byte, end_byte = buffer_text:find(search_pattern, search_pos, true)
+		if not start_byte then
+			break
+		end
+		
+		-- Convert byte position to row/col
+		local chars_before_start = start_byte - 1
+		local start_row = 0
+		local start_col = 0
+		
+		for i, line in ipairs(lines) do
+			local line_len = #line + 1  -- +1 for newline
+			if chars_before_start < line_len then
+				start_row = i - 1  -- 0-based
+				start_col = chars_before_start
+				break
+			end
+			chars_before_start = chars_before_start - line_len
+		end
+		
+		local is_valid = true
+		
+		-- Check keyword boundaries for normal mode
+		if lock_to_keyword then
+			local line = lines[start_row + 1]
+			if line then
+				local range = require('viedit.select').get_keyword_range(line, start_row, start_col + 1)
+				if range then
+					local keyword = line:sub(range[2] + 1, range[4])
+					if keyword ~= text then
+						is_valid = false
+					end
+				else
+					is_valid = false
+				end
+			end
+		end
+		
+		if is_valid then
+			-- Calculate end position
+			local text_lines = vim.split(text, "\n", {plain = true})
+			local end_row = start_row + #text_lines - 1
+			local end_col
+			
+			if #text_lines == 1 then
+				-- Single line: end_col relative to start
+				end_col = start_col + #text
+			else
+				-- Multi-line: end_col is length of last line
+				end_col = #text_lines[#text_lines]
+			end
+			
+			-- Create extmark
+			local mark = vim.api.nvim_buf_set_extmark(buffer_number, namespace.ns, start_row, start_col, {
+				end_row = end_row,
+				end_col = end_col,
+				hl_group = constants.HL_GROUP_SELECT,
+				end_right_gravity = config.end_right_gravity,
+				right_gravity = config.righ_gravity,
+			})
+			session.marks:add(mark)
+		end
+		
+		search_pos = end_byte + 1
+	end
 end
 
 local function cycle_extmarks(session, back)

@@ -9,7 +9,9 @@ local function mark_id_to_range(buf, mark_id)
 
 	local mark = vim.api.nvim_buf_get_extmark_by_id(buf, ns, mark_id, { details = true })
 	if #mark > 0 then
-		return { mark[1], mark[2], mark[3].end_row, mark[3].end_col }
+		local range = { mark[1], mark[2], mark[3].end_row, mark[3].end_col }
+		print(string.format("Mark %d: start=(%d,%d) end=(%d,%d)", mark_id, range[1], range[2], range[3], range[4]))
+		return range
 	end
 
 	return nil
