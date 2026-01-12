@@ -17,8 +17,8 @@ local function mark_id_to_range(buf, mark_id)
 	return nil
 end
 
-local function update_extmarks(buffer_id, session, new_content)
-	new_content = tostring(new_content)
+local function update_extmarks(buffer_id, session, new_content_lines)
+	-- new_content_lines is an array of lines
 	local marks = session.marks:get_all_reversed()
 	for _, mark_id in ipairs(marks) do
 		if mark_id == session.current_extmark then
@@ -27,17 +27,29 @@ local function update_extmarks(buffer_id, session, new_content)
 		local range = mark_id_to_range(buffer_id, mark_id)
 		if range then
 			local start_row, start_col, end_row, end_col = unpack(range)
-			-- Delete existing content
+			
+			-- Delete existing content at this extmark
 			vim.api.nvim_buf_set_text(buffer_id, start_row, start_col, end_row, end_col, {})
-			-- Insert new content
-			local new_lines = vim.split(new_content, "\n")
-			vim.api.nvim_buf_set_text(buffer_id, start_row, start_col, start_row, start_col, new_lines)
-			-- Update extmark end position
-			local new_end_row = start_row + #new_lines - 1
-			local new_end_col = start_col + (#new_lines > 1 and #new_lines[#new_lines] or #new_content)
+			
+			-- Insert new content line by line
+			vim.api.nvim_buf_set_text(buffer_id, start_row, start_col, start_row, start_col, new_content_lines)
+			
+			-- Calculate new end position based on number of lines
+			local num_lines = #new_content_lines
+			local new_end_row = start_row + num_lines - 1
+			local new_end_col
+			
+			if num_lines == 1 then
+				-- Single line: end_col is start_col + length of line
+				new_end_col = start_col + #new_content_lines[1]
+			else
+				-- Multi-line: end_col is the length of the last line
+				new_end_col = #new_content_lines[num_lines]
+			end
 
 			local config = require("viedit.config").config
 
+			-- Update extmark with new dimensions
 			vim.api.nvim_buf_set_extmark(buffer_id, ns, start_row, start_col, {
 				id = mark_id,
 				end_row = new_end_row,
@@ -54,16 +66,21 @@ end
 local function sync_extmarks(buffer_id, session)
 	local range = mark_id_to_range(buffer_id, session.current_extmark)
 	if not range then
-		print("No current extmark ")
 		return
 	end
 
 	local start_row, start_col, end_row, end_col = unpack(range)
-	local current_content = vim.api.nvim_buf_get_text(buffer_id, start_row, start_col, end_row, end_col, {})
-
-	if #current_content > 0 and current_content[1] ~= session.current_selection then
-		session.current_selection = current_content[1]
-		update_extmarks(buffer_id, session, current_content[1])
+	
+	-- Get current content as array of lines
+	local current_content_lines = vim.api.nvim_buf_get_text(buffer_id, start_row, start_col, end_row, end_col, {})
+	
+	-- Join lines to compare with stored selection
+	local current_content_str = table.concat(current_content_lines, "\n")
+	
+	-- If content changed, sync all other extmarks
+	if current_content_str ~= session.current_selection then
+		session.current_selection = current_content_str
+		update_extmarks(buffer_id, session, current_content_lines)
 	end
 end
 
@@ -74,10 +91,27 @@ local function is_cursor_on_extmark(buffer_id, extmark_id)
 	end
 
 	local cursor = vim.api.nvim_win_get_cursor(0)
-	local line = cursor[1] - 1
-	local col = cursor[2]
-
-	return extmark[1] == line and extmark[2] <= col and col <= extmark[4]
+	local cursor_row = cursor[1] - 1
+	local cursor_col = cursor[2]
+	
+	local start_row, start_col, end_row, end_col = unpack(extmark)
+	
+	-- Check if cursor row is within the extmark range
+	if cursor_row < start_row or cursor_row > end_row then
+		return false
+	end
+	
+	-- If cursor is on start row, check if after start_col
+	if cursor_row == start_row and cursor_col < start_col then
+		return false
+	end
+	
+	-- If cursor is on end row, check if before end_col
+	if cursor_row == end_row and cursor_col > end_col then
+		return false
+	end
+	
+	return true
 end
 
 local function change_extmark_highlight(buffer, namespace, extmark_id, new_hl_group)
