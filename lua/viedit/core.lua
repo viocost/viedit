@@ -26,6 +26,12 @@ function M.start_session(buffer_id)
       vim.cmd('silent! undojoin')
 
       util.sync_extmarks(buffer_id, session)
+      
+      -- Clear insert_mode_extmark after sync if we're in normal mode
+      local mode = vim.api.nvim_get_mode().mode
+      if mode == 'n' or mode == 'v' or mode == 'V' then
+        session.insert_mode_extmark = nil
+      end
     end,
   })
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
@@ -35,6 +41,16 @@ function M.start_session(buffer_id)
       util.highlight_current_extrmark(buffer_id, session)
     end,
   })
+  
+  -- Track which extmark we're on when entering insert mode
+  vim.api.nvim_create_autocmd({ 'InsertEnter' }, {
+    group = group_id,
+    buffer = buffer_id,
+    callback = function()
+      session.insert_mode_extmark = session.current_extmark
+    end,
+  })
+  
   return session
 end
 

@@ -17,9 +17,13 @@ end
 
 local function update_extmarks(buffer_id, session, new_content_lines)
 	-- new_content_lines is an array of lines
+	
+	-- Use insert_mode_extmark if we're in insert mode, otherwise use current_extmark
+	local extmark_to_skip = session.insert_mode_extmark or session.current_extmark
+	
 	local marks = session.marks:get_all_reversed()
 	for _, mark_id in ipairs(marks) do
-		if mark_id == session.current_extmark then
+		if mark_id == extmark_to_skip then
 			goto continue
 		end
 		local range = mark_id_to_range(buffer_id, mark_id)
@@ -62,7 +66,10 @@ local function update_extmarks(buffer_id, session, new_content_lines)
 end
 
 local function sync_extmarks(buffer_id, session)
-	local range = mark_id_to_range(buffer_id, session.current_extmark)
+	-- Use insert_mode_extmark if we're in insert mode, otherwise use current_extmark
+	local extmark_to_sync = session.insert_mode_extmark or session.current_extmark
+	
+	local range = mark_id_to_range(buffer_id, extmark_to_sync)
 	if not range then
 		return
 	end
@@ -104,8 +111,8 @@ local function is_cursor_on_extmark(buffer_id, extmark_id)
 		return false
 	end
 	
-	-- If cursor is on end row, check if before end_col
-	if cursor_row == end_row and cursor_col > end_col then
+	-- If cursor is on end row, check if before end_col (end_col is exclusive)
+	if cursor_row == end_row and cursor_col >= end_col then
 		return false
 	end
 	

@@ -12,6 +12,7 @@ function Session.new(buffer_id, augroup_id)
 		marks = ExtMarks.new(),
 		current_selection = "",
 		current_extmark = nil,
+		insert_mode_extmark = nil, -- Track which extmark we were on when entering insert mode
 		is_active = true,
 		last_activity = os.time(),
 	}, Session)
