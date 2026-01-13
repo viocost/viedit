@@ -229,6 +229,48 @@ vim.keymap.set('n', '<leader>vn', require('viedit').step, { desc = 'Viedit: Next
 vim.keymap.set('n', '<leader>vp', function() require('viedit').step({back = true}) end, { desc = 'Viedit: Previous occurrence' })
 ```
 
+## Testing
+
+Viedit includes a comprehensive test suite to ensure reliability and catch regressions.
+
+### Prerequisites
+
+The tests require [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) to be installed. If you're using a plugin manager:
+
+**lazy.nvim:**
+```lua
+{ 'nvim-lua/plenary.nvim' }
+```
+
+**packer.nvim:**
+```lua
+use 'nvim-lua/plenary.nvim'
+```
+
+### Running Tests
+
+From the plugin directory, run:
+
+```bash
+./tests/run_tests.sh
+```
+
+Or manually:
+
+```bash
+nvim --headless --noplugin -u tests/minimal_init.lua \
+    -c "lua require('plenary.test_harness').test_directory('tests/', { minimal_init = 'tests/minimal_init.lua' })"
+```
+
+### Test Coverage
+
+Current tests cover:
+- Normal mode keyword selection
+- Visual mode substring selection
+- Multi-line pattern matching
+- Session lifecycle
+- Extmark synchronization
+
 ## Acknowledgements
 
 Viedit is heavily inspired by
