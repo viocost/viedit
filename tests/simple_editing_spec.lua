@@ -64,20 +64,6 @@ describe("viedit simple editing", function()
 		vim.cmd("doautocmd TextChanged")
 		vim.wait(100) -- Wait for sync
 
-		-- Check session state
-		local session = Session.get(buf)
-		print("Session active:", Session.is_active(buf))
-		print("Current extmark:", session and session.current_extmark or "nil")
-		print("Current selection:", session and session.current_selection or "nil")
-
-		-- Check what's actually in the buffer
-		local first_line = vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1]
-		print("First line content:", first_line)
-
-		-- Check the first extmark's range
-		local first_extmark = vim.api.nvim_buf_get_extmark_by_id(buf, namespace.ns, 1, { details = true })
-		print("First extmark range:", vim.inspect(first_extmark))
-
 		-- Get all extmarks and check their content
 		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
 
@@ -270,5 +256,126 @@ describe("viedit simple editing", function()
 			local content = vim.api.nvim_buf_get_text(buf, mark[2], mark[3], mark[4].end_row, mark[4].end_col, {})
 			assert.equals("keywor", table.concat(content, "\n"))
 		end
+	end)
+
+	it("should deselect individual occurrences and mutate only remaining ones", function()
+		local buf = vim.api.nvim_get_current_buf()
+
+		-- Create buffer with 7 "hello" words
+		vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+			"hello world and hello",
+			"foo hello bar",
+			"hello something else",
+			"random hello text",
+			"hello again",
+			"final hello here",
+		})
+
+		-- 1. Go to hello and activate viedit
+		vim.api.nvim_win_set_cursor(0, { 1, 0 })
+		feedkeys("<Esc>")
+		vim.wait(10)
+		viedit.toggle_all()
+		vim.wait(10)
+
+		-- 3. Assert session is active with 7 extmarks
+		assert.is_true(Session.is_active(buf), "Session should be active")
+		local extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		assert.equals(7, #extmarks, "Should have 7 extmarks initially")
+
+		-- 4. Mutate one instance - prepend 'x'
+		vim.api.nvim_win_set_cursor(0, { 1, 0 })
+		feedkeys("ix<Esc>")
+		vim.wait(10)
+		vim.cmd("doautocmd TextChanged")
+		vim.wait(100)
+
+		-- 5. Assert all are mutated to "xhello"
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		for i, mark in ipairs(extmarks) do
+			local content = vim.api.nvim_buf_get_text(buf, mark[2], mark[3], mark[4].end_row, mark[4].end_col, {})
+			assert.equals("xhello", table.concat(content, "\n"), "All should be 'xhello' after first mutation")
+		end
+
+		-- 6. Deselect 2 instances
+		-- Get extmark positions before deselecting
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		
+		-- Navigate to second extmark (index 2) and deselect
+		local second_mark = extmarks[2]
+		vim.api.nvim_win_set_cursor(0, { second_mark[2] + 1, second_mark[3] }) -- +1 for 1-based row
+		
+		-- Update current_extmark to reflect cursor position
+		local session = require('viedit.session').get(buf)
+		local util = require('viedit.util')
+		util.highlight_current_extrmark(buf, session)
+		vim.wait(10)
+		
+		viedit.toggle_single()
+		vim.wait(50)
+		
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+
+		-- Navigate to what is now the second extmark (original third) and deselect
+		local third_mark = extmarks[2]
+		vim.api.nvim_win_set_cursor(0, { third_mark[2] + 1, third_mark[3] })
+		
+		-- Update current_extmark again
+		util.highlight_current_extrmark(buf, session)
+		vim.wait(10)
+		
+		viedit.toggle_single()
+		vim.wait(50)
+
+		-- Should now have 5 extmarks
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		assert.equals(5, #extmarks, "Should have 5 extmarks after deselecting 2")
+
+		-- 7. Mutate again - prepend 'y'
+		-- Get first remaining extmark and position cursor there
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		local first_mark = extmarks[1]
+		vim.api.nvim_win_set_cursor(0, { first_mark[2] + 1, first_mark[3] })
+		
+		-- Update current_extmark to ensure we're on the first extmark
+		util.highlight_current_extrmark(buf, session)
+		vim.wait(10)
+		
+		feedkeys("iy<Esc>")
+		vim.wait(10)
+		vim.cmd("doautocmd TextChanged")
+		vim.wait(100)
+
+		-- 8. Validate:
+		-- 1 - number of extmarks should still be 5
+		extmarks = vim.api.nvim_buf_get_extmarks(buf, namespace.ns, 0, -1, { details = true })
+		assert.equals(5, #extmarks, "Should still have 5 extmarks after second mutation")
+
+		-- 2 - only 5 instances were mutated to "yxhello"
+		for i, mark in ipairs(extmarks) do
+			local content = vim.api.nvim_buf_get_text(buf, mark[2], mark[3], mark[4].end_row, mark[4].end_col, {})
+			assert.equals("yxhello", table.concat(content, "\n"), "Selected extmarks should be 'yxhello'")
+		end
+
+		-- 3 - find mutated once occurrences "xhello", ensure there are exactly 2 instances
+		local all_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+		local buffer_text = table.concat(all_lines, "\n")
+		
+		-- Count occurrences of "xhello" (not "yxhello")
+		local xhello_count = 0
+		local pos = 1
+		while true do
+			local start_pos = buffer_text:find("xhello", pos, true)
+			if not start_pos then
+				break
+			end
+			-- Check it's not "yxhello" by checking character before
+			if start_pos == 1 or buffer_text:sub(start_pos - 1, start_pos - 1) ~= "y" then
+				xhello_count = xhello_count + 1
+			end
+			pos = start_pos + 1
+		end
+		
+		assert.equals(2, xhello_count, "Should have exactly 2 occurrences of 'xhello' (deselected ones)")
 	end)
 end)
