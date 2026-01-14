@@ -61,6 +61,13 @@ local function close_session(buffer_id)
 	Session.delete(buffer_id)
 end
 
+-- Helper to check if next occurrence is adjacent on the right
+local function has_adjacent_right(buffer_text, current_end, search_pattern)
+	local next_start, _ = buffer_text:find(search_pattern, current_end + 1, true)
+	local is_adjacent = next_start ~= nil and next_start == current_end + 1
+	return is_adjacent
+end
+
 function M.select_all(buffer_number, text, session, lock_to_keyword)
 	if not session then
 		print("No active session for buffer", buffer_number)
@@ -127,13 +134,26 @@ function M.select_all(buffer_number, text, session, lock_to_keyword)
 				end_col = #text_lines[#text_lines]
 			end
 
+			-- Check if next occurrence is adjacent on the right
+			local is_adjacent = has_adjacent_right(buffer_text, end_byte, search_pattern)
+			
+			-- Set gravity: nil for adjacent extmarks, config values otherwise
+			local end_right_gravity, right_gravity
+			if is_adjacent then
+				end_right_gravity = nil
+				right_gravity = nil
+			else
+				end_right_gravity = config.config.end_right_gravity
+				right_gravity = config.config.right_gravity
+			end
+
 			-- Create extmark
 			local mark = Marks.set(buffer_number, namespace.ns, start_row, start_col, {
 				end_row = end_row,
 				end_col = end_col,
 				hl_group = constants.HL_GROUP_SELECT,
-				end_right_gravity = config.end_right_gravity,
-				right_gravity = config.righ_gravity,
+				end_right_gravity = end_right_gravity,
+				right_gravity = right_gravity,
 			})
 			session.marks:add(mark)
 		end
@@ -271,11 +291,33 @@ end
 local function mark_single_selection(buffer_id, session)
 	local range = find_word_at_cursor(buffer_id, session.current_selection)
 	if range then
+		-- Check if there's an adjacent mark on the right
+		local lines = vim.api.nvim_buf_get_lines(buffer_id, 0, -1, false)
+		local buffer_text = table.concat(lines, "\n")
+		local search_pattern = vim.pesc(session.current_selection)
+		
+		-- Calculate byte position of current match end
+		local chars_before = 0
+		for i = 1, range.start[1] do
+			chars_before = chars_before + #lines[i] + 1
+		end
+		chars_before = chars_before + range["end"][2]
+		
+		local is_adjacent = has_adjacent_right(buffer_text, chars_before, search_pattern)
+		local end_right_gravity, right_gravity
+		if is_adjacent then
+			end_right_gravity = nil
+			right_gravity = nil
+		else
+			end_right_gravity = config.config.end_right_gravity
+			right_gravity = config.config.right_gravity
+		end
+		
 		local mark = Marks.set(buffer_id, namespace.ns, range.start[1], range.start[2], {
 			end_col = range["end"][2],
 			hl_group = constants.HL_GROUP_SELECT,
-			end_right_gravity = config.end_right_gravity,
-			right_gravity = config.righ_gravity,
+			end_right_gravity = end_right_gravity,
+			right_gravity = right_gravity,
 		})
 		session.marks:add(mark)
 		Marks.highlight_current_extmark(buffer_id, session)

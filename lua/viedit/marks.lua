@@ -249,13 +249,23 @@ local function update_extmarks(buffer_id, session, new_content_lines)
 
 			local config = require("viedit.config").config
 
-			-- Update extmark with new dimensions
+			-- Get original gravity from extmark details to preserve it
+			local extmark_details = ExtMarks.get_details(buffer_id, ns, mark_id)
+			local end_right_gravity = config.end_right_gravity
+			local right_gravity = config.right_gravity
+			
+			if extmark_details and extmark_details[3] then
+				end_right_gravity = extmark_details[3].end_right_gravity
+				right_gravity = extmark_details[3].right_gravity
+			end
+
+			-- Update extmark with new dimensions, preserving original gravity
 			ExtMarks.update(buffer_id, ns, start_row, start_col, mark_id, {
 				end_row = new_end_row,
 				end_col = new_end_col,
 				hl_group = constants.HL_GROUP_SELECT,
-				right_gravity = config.right_gravity,
-				end_right_gravity = config.end_right_gravity,
+				right_gravity = right_gravity,
+				end_right_gravity = end_right_gravity,
 			})
 		end
 		::continue::
