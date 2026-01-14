@@ -307,8 +307,8 @@ describe("viedit simple editing", function()
 		
 		-- Update current_extmark to reflect cursor position
 		local session = require('viedit.session').get(buf)
-		local util = require('viedit.util')
-		util.highlight_current_extrmark(buf, session)
+		local Marks = require('viedit.marks')
+		Marks.highlight_current_extmark(buf, session)
 		vim.wait(10)
 		
 		viedit.toggle_single()
@@ -321,7 +321,7 @@ describe("viedit simple editing", function()
 		vim.api.nvim_win_set_cursor(0, { third_mark[2] + 1, third_mark[3] })
 		
 		-- Update current_extmark again
-		util.highlight_current_extrmark(buf, session)
+		Marks.highlight_current_extmark(buf, session)
 		vim.wait(10)
 		
 		viedit.toggle_single()
@@ -338,7 +338,7 @@ describe("viedit simple editing", function()
 		vim.api.nvim_win_set_cursor(0, { first_mark[2] + 1, first_mark[3] })
 		
 		-- Update current_extmark to ensure we're on the first extmark
-		util.highlight_current_extrmark(buf, session)
+		Marks.highlight_current_extmark(buf, session)
 		vim.wait(10)
 		
 		feedkeys("iy<Esc>")

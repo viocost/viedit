@@ -7,7 +7,6 @@ local ranges = require('viedit.ranges')
 local namespace = require('viedit.namespace')
 
 local Marks = require('viedit.marks')
-local util = require('viedit.util')
 local select = require('viedit.select')
 local keymaps = require('viedit.keymaps')
 
@@ -25,7 +24,7 @@ function M.start_session(buffer_id)
 
       vim.cmd('silent! undojoin')
 
-      util.sync_extmarks(buffer_id, session)
+      Marks.sync_extmarks(buffer_id, session)
       
       -- Clear insert_mode_extmark after sync if we're in normal mode
       local mode = vim.api.nvim_get_mode().mode
@@ -38,7 +37,7 @@ function M.start_session(buffer_id)
     group = group_id,
     buffer = buffer_id,
     callback = function()
-      util.highlight_current_extrmark(buffer_id, session)
+      Marks.highlight_current_extmark(buffer_id, session)
     end,
   })
   
@@ -290,7 +289,7 @@ local function mark_single_selection(buffer_id, session)
       right_gravity = config.righ_gravity,
     })
     session.marks:add(mark)
-    util.highlight_current_extrmark(buffer_id, session)
+    Marks.highlight_current_extmark(buffer_id, session)
   else
     print('Selected text not found under the cursor')
   end
@@ -328,7 +327,7 @@ local function restrict_to_range(range)
   end
 
   local marks = session.marks:get_all()
-  local marks_within_range = Marks.from_ids(util.filter_marks_within_range(marks, range))
+  local marks_within_range = Marks.from_ids(Marks.filter_marks_within_range(marks, range))
 
   for _, mark_id in ipairs(marks) do
     if not marks_within_range:contains(mark_id) then

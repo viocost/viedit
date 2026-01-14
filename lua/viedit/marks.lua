@@ -197,4 +197,27 @@ function ExtMarks:clear()
 	self.set = {}
 end
 
+-- ============================================================================
+-- HIGH-LEVEL OPERATIONS - Using internal utilities
+-- ============================================================================
+
+-- Load internal utilities and initialize with self reference
+local marks_util = require("viedit.marks_util")
+marks_util.init(ExtMarks)
+
+-- Sync extmarks: Update all extmarks based on changes to one extmark
+function ExtMarks.sync_extmarks(buffer_id, session)
+	return marks_util.sync_extmarks(buffer_id, session)
+end
+
+-- Highlight current extmark: Update highlighting based on cursor position
+function ExtMarks.highlight_current_extmark(buffer_id, session)
+	return marks_util.highlight_current_extrmark(buffer_id, session)
+end
+
+-- Filter marks within range: Get only marks that fall within a given range
+function ExtMarks.filter_marks_within_range(mark_ids, range)
+	return marks_util.filter_marks_within_range(mark_ids, range)
+end
+
 return ExtMarks
