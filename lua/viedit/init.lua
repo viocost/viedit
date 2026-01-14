@@ -4,7 +4,7 @@ local M = {}
 local core = require('viedit.core')
 
 local config = require('viedit.config')
-local util = require('viedit.util')
+local Marks = require('viedit.marks')
 local keymaps = require('viedit.keymaps')
 
 M.setup = config.setup
@@ -37,7 +37,7 @@ function M.toggle_all()
       keymaps.set_viedit_keymaps(buffer_id)
 
       core.select_all(buffer_id, text, session, lock_to_keyword)
-      util.highlight_current_extrmark(buffer_id, session)
+      Marks.highlight_current_extmark(buffer_id, session)
       session.current_selection = text
     end
     vim.cmd.norm({ '\x1b', bang = true })
