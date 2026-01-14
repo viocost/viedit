@@ -331,8 +331,30 @@ function ExtMarks.sync_extmarks(buffer_id, session)
 	local extmark_to_sync = session.insert_mode_extmark or session.current_extmark
 
 	local range = mark_id_to_range(buffer_id, extmark_to_sync)
+	
+	-- If no extmark is currently active (e.g., after deletion), find the changed extmark
 	if not range then
-		return
+		-- Check all marks to find one that has changed content
+		for _, mark_id in ipairs(session.marks:get_all()) do
+			local mark_range = mark_id_to_range(buffer_id, mark_id)
+			if mark_range then
+				local m_start_row, m_start_col, m_end_row, m_end_col = unpack(mark_range)
+				local mark_content_lines = vim.api.nvim_buf_get_text(buffer_id, m_start_row, m_start_col, m_end_row, m_end_col, {})
+				local mark_content_str = table.concat(mark_content_lines, "\n")
+				
+				-- If this mark's content differs from stored selection, use it as sync source
+				if mark_content_str ~= session.current_selection then
+					extmark_to_sync = mark_id
+					range = mark_range
+					break
+				end
+			end
+		end
+		
+		-- If still no range found, nothing to sync
+		if not range then
+			return
+		end
 	end
 
 	local start_row, start_col, end_row, end_col = unpack(range)
