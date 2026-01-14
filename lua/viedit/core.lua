@@ -129,7 +129,7 @@ function M.select_all(buffer_number, text, session, lock_to_keyword)
 			end
 			
 			-- Create extmark
-			local mark = vim.api.nvim_buf_set_extmark(buffer_number, namespace.ns, start_row, start_col, {
+			local mark = Marks.set(buffer_number, namespace.ns, start_row, start_col, {
 				end_row = end_row,
 				end_col = end_col,
 				hl_group = constants.HL_GROUP_SELECT,
@@ -178,23 +178,7 @@ end
 
 local function compare_extmarks_by_position(id1, id2)
   local buffer_id = vim.api.nvim_get_current_buf()
-
-  -- Get positions of both extmarks
-  local pos1 = vim.api.nvim_buf_get_extmark_by_id(buffer_id, namespace.ns, id1, {})
-  local pos2 = vim.api.nvim_buf_get_extmark_by_id(buffer_id, namespace.ns, id2, {})
-
-  -- Check if both positions are valid
-  if #pos1 == 0 or #pos2 == 0 then
-    error('Invalid extmark ID encountered')
-  end
-
-  -- Compare row positions first
-  if pos1[1] ~= pos2[1] then
-    return pos1[1] < pos2[1]
-  end
-
-  -- If rows are the same, compare column positions
-  return pos1[2] < pos2[2]
+  return Marks.compare_positions(buffer_id, namespace.ns, id1, id2)
 end
 
 -- Usage example:
@@ -220,7 +204,7 @@ function M.navigate_extmarks(back)
   end
 
   -- Get the position of the next extmark
-  local mark = vim.api.nvim_buf_get_extmark_by_id(0, namespace.ns, next_id, { details = true })
+  local mark = Marks.get_details(0, namespace.ns, next_id)
   if #mark == 0 then
     print('Failed to get extmark position')
     return
@@ -240,13 +224,12 @@ end
 
 -- Deselect all occurrences in the current buffer
 function M.deselect_all(buffer_id)
-  local extmarks = vim.api.nvim_buf_get_extmarks(buffer_id, namespace.ns, 0, -1, {})
   local session = Session.get(buffer_id)
 
   session:deactivate()
 
   -- Iterate through all extmarks and remove them
-  vim.api.nvim_buf_clear_namespace(buffer_id, namespace.ns, 0, -1)
+  Marks.clear_all(buffer_id, namespace.ns)
   session.marks:clear()
 end
 
@@ -262,7 +245,7 @@ local function remove_extmark(mark_id, buffer_id, session)
   end
 
   session.marks:delete(mark_id)
-  vim.api.nvim_buf_del_extmark(buffer_id, namespace.ns, mark_id)
+  Marks.delete_mark(buffer_id, namespace.ns, mark_id)
 
   if session.marks:size() == 0 then
     close_session(buffer_id)
@@ -300,7 +283,7 @@ end
 local function mark_single_selection(buffer_id, session)
   local range = find_word_at_cursor(buffer_id, session.current_selection)
   if range then
-    local mark = vim.api.nvim_buf_set_extmark(buffer_id, namespace.ns, range.start[1], range.start[2], {
+    local mark = Marks.set(buffer_id, namespace.ns, range.start[1], range.start[2], {
       end_col = range['end'][2],
       hl_group = constants.HL_GROUP_SELECT,
       end_right_gravity = config.end_right_gravity,

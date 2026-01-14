@@ -1,18 +1,14 @@
 M = {}
 local ns = require("viedit.namespace").ns
 local constants = require("viedit.constants")
+local Marks = require("viedit.marks")
 
 local function mark_id_to_range(buf, mark_id)
 	if mark_id == nil then
 		return nil
 	end
 
-	local mark = vim.api.nvim_buf_get_extmark_by_id(buf, ns, mark_id, { details = true })
-	if #mark > 0 then
-		return { mark[1], mark[2], mark[3].end_row, mark[3].end_col }
-	end
-
-	return nil
+	return Marks.get_range(buf, ns, mark_id)
 end
 
 local function update_extmarks(buffer_id, session, new_content_lines)
@@ -52,8 +48,7 @@ local function update_extmarks(buffer_id, session, new_content_lines)
 			local config = require("viedit.config").config
 
 			-- Update extmark with new dimensions
-			vim.api.nvim_buf_set_extmark(buffer_id, ns, start_row, start_col, {
-				id = mark_id,
+			Marks.update(buffer_id, ns, start_row, start_col, mark_id, {
 				end_row = new_end_row,
 				end_col = new_end_col,
 				hl_group = constants.HL_GROUP_SELECT,
@@ -90,33 +85,7 @@ local function sync_extmarks(buffer_id, session)
 end
 
 local function is_cursor_on_extmark(buffer_id, extmark_id)
-	local extmark = mark_id_to_range(buffer_id, extmark_id)
-	if extmark == nil then
-		return false
-	end
-
-	local cursor = vim.api.nvim_win_get_cursor(0)
-	local cursor_row = cursor[1] - 1
-	local cursor_col = cursor[2]
-	
-	local start_row, start_col, end_row, end_col = unpack(extmark)
-	
-	-- Check if cursor row is within the extmark range
-	if cursor_row < start_row or cursor_row > end_row then
-		return false
-	end
-	
-	-- If cursor is on start row, check if after start_col
-	if cursor_row == start_row and cursor_col < start_col then
-		return false
-	end
-	
-	-- If cursor is on end row, check if before end_col (end_col is exclusive)
-	if cursor_row == end_row and cursor_col >= end_col then
-		return false
-	end
-	
-	return true
+	return Marks.is_cursor_on(buffer_id, ns, extmark_id)
 end
 
 local function change_extmark_highlight(buffer, namespace, extmark_id, new_hl_group)
@@ -127,8 +96,7 @@ local function change_extmark_highlight(buffer, namespace, extmark_id, new_hl_gr
 		return
 	end
 
-	vim.api.nvim_buf_set_extmark(buffer, namespace, range[1], range[2], {
-		id = extmark_id,
+	Marks.update(buffer, namespace, range[1], range[2], extmark_id, {
 		hl_group = new_hl_group,
 		end_right_gravity = config.end_right_gravity,
 		right_gravity = config.right_gravity,
@@ -164,7 +132,7 @@ local function filter_marks_within_range(mark_ids, range)
 	local filtered_ids = {}
 	for _, mark_id in ipairs(mark_ids) do
 		-- Get the position of the mark
-		local mark_pos = vim.api.nvim_buf_get_extmark_by_id(0, ns, mark_id, {})
+		local mark_pos = Marks.get_position(0, ns, mark_id)
 
 		if #mark_pos > 0 then
 			local mark_line, mark_col = mark_pos[1], mark_pos[2]
